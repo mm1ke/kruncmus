@@ -1,15 +1,15 @@
 [Desktop Entry]
-Name=Msgbox runner
-Comment=Sample python krunner plugin, that will show the entered text in a messagebox
+Name=cmus krunner
+Comment=simple krunner script for cmus
 Type=Service
 Icon=dialog-information
 ServiceTypes=Plasma/Runner
 X-Plasma-API=python
 X-Plasma-MainScript=code/main.py
-X-KDE-PluginInfo-Author=<your name>  
-X-KDE-PluginInfo-Email=<your email>
-X-KDE-PluginInfo-Name=msgbox_runner
+X-KDE-PluginInfo-Author=Michael Mair-Keimberger
+X-KDE-PluginInfo-Email=m.mairkeimberger@gmail.com
+X-KDE-PluginInfo-Name=kruncmus
 X-KDE-PluginInfo-Version=0.1
-X-KDE-PluginInfo-Website=http://plasma.kde.org/
+X-KDE-PluginInfo-Website=http://github.com/mm1ke
 X-KDE-PluginInfo-License=LGPLv3
 X-KDE-PluginInfo-EnabledByDefault=true
