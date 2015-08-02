@@ -64,7 +64,7 @@ class kruncmus(plasmascript.Runner):
         # goto playlist and search for the track
         call(["cmus-remote","-C","view playlist"])
         call(["cmus-remote","-C","/" + match.data().toString()])
-        result = basename(check_output(["cmus-remote","-C","echo {}"]))
+        result = basename(str(check_output(["cmus-remote","-C","echo {}"]))).rstrip('\\n\'').rstrip()
         # if the track wasn't found cmus echo's the wrong track, thus simple check the names
         if result == match.data().toString():
             call(["cmus-remote","-C","win-activate"])
