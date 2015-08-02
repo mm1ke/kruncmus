@@ -5,14 +5,12 @@ from subprocess import call
 from subprocess import check_output
 from os.path import basename
 
-MAX_RESULTS = 5
-
 class kruncmus(plasmascript.Runner):
 
     def init(self):
         # called upon creation to let us run any intialization
         # tell the user how to use this runner
-        self.addSyntax(Plasma.RunnerSyntax("cmr :q:", "Display :q: in a messagebox"))
+        self.addSyntax(Plasma.RunnerSyntax("cmr :q:", "Plays :q: in cmus"))
 
     def match(self, context):
         # called by krunner to let us add actions for the user
@@ -21,7 +19,7 @@ class kruncmus(plasmascript.Runner):
 
         q = context.query()
 
-        # look for our keyword 'msg'
+        # look for our keyword 'cmr'
         if not q.startsWith("cmr "):
              return
 
@@ -34,36 +32,52 @@ class kruncmus(plasmascript.Runner):
         q = q.trimmed()
 
         # now create an action for the user, and send it to krunner
+
+        # goto libary, clear filter and search
         call(["cmus-remote","-C","view sorted"])
+        call(["cmus-remote","-C","live-filter"])
         call(["cmus-remote","-C","live-filter " + q])
 
         output = ""
-        output_next = ""
 
         m = Plasma.QueryMatch(self.runner)
-        
         while True:
 
-            output = basename(check_output(["cmus-remote","-C","echo {}"]))
-            call(["cmus-remote","-C","win-down"])
+            output = basename(str(check_output(["cmus-remote","-C","echo {}"]))).rstrip('\\n\'').rstrip()
+            if output == "":
+                break
 
-            m.setText("Found: '%s'" % str(output))
+            m.setText("Play: '%s'" % output)
             m.setType(Plasma.QueryMatch.ExactMatch)
-            m.setIcon(KIcon("dialog-information"))
+            m.setIcon(KIcon("media-playback-start"))
             m.setData(output)
             context.addMatch(output, m)
-            
-            output_next = basename(check_output(["cmus-remote","-C","echo {}"]))
-            if output == output_next:
+
+            call(["cmus-remote","-C","win-down"])
+            # if we cant move down, names will be the same
+            if output == basename(str(check_output(["cmus-remote","-C","echo {}"]))).rstrip('\\n\'').rstrip():
                 break
 
 
     def run(self, context, match):
-        # called by KRunner when the user selects our action,        
-        # so lets keep our promise
-        call(["cmus-remote","-C","live-filter " + match.data().toString()])
-        call(["cmus-remote","-C","win-activate"])
-        call(["cmus-remote","-C","live-filter"])
+
+        # goto playlist and search for the track
+        call(["cmus-remote","-C","view playlist"])
+        call(["cmus-remote","-C","/" + match.data().toString()])
+        result = basename(check_output(["cmus-remote","-C","echo {}"]))
+        # if the track wasn't found cmus echo's the wrong track, thus simple check the names
+        if result == match.data().toString():
+            call(["cmus-remote","-C","win-activate"])
+        # track not in playlist? add it!
+        else:
+            call(["cmus-remote","-C","view sorted"])
+            call(["cmus-remote","-C","live-filter " + match.data().toString()])
+            call(["cmus-remote","-C","win-add-p"])
+            call(["cmus-remote","-C","live-filter"])
+            call(["cmus-remote","-C","view playlist"])
+            call(["cmus-remote","-C","/" + match.data().toString()])
+            call(["cmus-remote","-C","win-activate"])
+
 
 
 def CreateRunner(parent):
