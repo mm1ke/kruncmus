@@ -45,6 +45,7 @@ class kruncmus(plasmascript.Runner):
             keyword = keyword.trimmed()
 
             if q.startsWith("cml"):
+                print("asdf")
 
                 PLAYLIST_DIR="/home/michael/Downloads/music/playlists/"
                 for f in glob.glob(PLAYLIST_DIR + str(keyword) + "*"):
@@ -110,7 +111,7 @@ class kruncmus(plasmascript.Runner):
             call(["cmus-remote","-C","live-filter " + match.data().toString()])
             call(["cmus-remote","-C","win-add-q"])
 
-        elif q.startsWith("cml "):
+        elif q.startsWith("cml"):
             call(["cmus-remote","-C","view playlist"])
             call(["cmus-remote","-C","load " + match.data().toString()])
             call(["cmus-remote","-C","win-activate"])
