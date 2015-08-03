@@ -4,6 +4,7 @@ from PyKDE4.kdeui import KIcon, KMessageBox
 from subprocess import call
 from subprocess import check_output
 from os.path import basename
+import glob
 
 class kruncmus(plasmascript.Runner):
 
@@ -19,64 +20,104 @@ class kruncmus(plasmascript.Runner):
 
         q = context.query()
 
-        # look for our keyword 'cmr'
-        if not q.startsWith("cmr "):
-             return
-
-        # ignore less than 3 characters (in addition to the keyword)
-        if q.length() < 7:
+        # look for our keyword's
+        #   cmp     cmus play - play track (also adds to playlist if not there)
+        #   cml     cmus playlist - load playlist and play
+        #   cmq     cmus queue - add track to queue
+        #   cmt     cmus toggle - toggle settings
+        if not (q.startsWith("cmp ") or q.startsWith("cml") or q.startsWith("cmq ") or q.startsWith("cmt")):
             return
 
-        # strip the keyword and leading space
-        q = q[3:]
-        q = q.trimmed()
-
-        # now create an action for the user, and send it to krunner
-
-        # goto libary, clear filter and search
-        call(["cmus-remote","-C","view sorted"])
-        call(["cmus-remote","-C","live-filter"])
-        call(["cmus-remote","-C","live-filter " + q])
-
-        output = ""
-
         m = Plasma.QueryMatch(self.runner)
-        while True:
+        
+        # ignore less than 3 characters (in addition to the keyword)
+        if q.startsWith("cmt"):
+            for t in ["continue","repeat","repeat_current","shuffle"]:
+                m.setText("Toggle: '%s'" % t)
+                m.setType(Plasma.QueryMatch.ExactMatch)
+                m.setIcon(KIcon("media-playback-start"))
+                m.setData(t)
+                context.addMatch(t, m)
 
-            output = basename(str(check_output(["cmus-remote","-C","echo {}"]))).rstrip('\\n\'').rstrip()
-            if output == "":
-                break
+        else:
+            # strip the keyword and leading space
+            keyword = q[3:]
+            keyword = keyword.trimmed()
 
-            m.setText("Play: '%s'" % output)
-            m.setType(Plasma.QueryMatch.ExactMatch)
-            m.setIcon(KIcon("media-playback-start"))
-            m.setData(output)
-            context.addMatch(output, m)
+            if q.startsWith("cml"):
 
-            call(["cmus-remote","-C","win-down"])
-            # if we cant move down, names will be the same
-            if output == basename(str(check_output(["cmus-remote","-C","echo {}"]))).rstrip('\\n\'').rstrip():
-                break
+                PLAYLIST_DIR="/home/michael/Downloads/music/playlists/"
+                for f in glob.glob(PLAYLIST_DIR + str(keyword) + "*"):
+                    m.setText("Play: '%s'" % basename(str(f)))
+                    m.setType(Plasma.QueryMatch.ExactMatch)
+                    m.setIcon(KIcon("media-playback-start"))
+                    m.setData(f)
+                    context.addMatch(f, m)
+
+            else:
+                if q.length() < 7:
+                    return
+
+                # goto libary, clear filter and search
+                call(["cmus-remote","-C","view sorted"])
+                call(["cmus-remote","-C","live-filter"])
+                call(["cmus-remote","-C","live-filter " + keyword])
+                
+                output = ""
+
+                while True:
+
+                    output = basename(str(check_output(["cmus-remote","-C","echo {}"]))).rstrip('\\n\'').rstrip()
+                    if output == "":
+                        break
+
+                    m.setText("Play: '%s'" % output)
+                    m.setType(Plasma.QueryMatch.ExactMatch)
+                    m.setIcon(KIcon("media-playback-start"))
+                    m.setData(output)
+                    context.addMatch(output, m)
+
+                    call(["cmus-remote","-C","win-down"])
+                    # if we cant move down, names will be the same
+                    if output == basename(str(check_output(["cmus-remote","-C","echo {}"]))).rstrip('\\n\'').rstrip():
+                        break
 
 
     def run(self, context, match):
+        
+        q = context.query()
 
-        # goto playlist and search for the track
-        call(["cmus-remote","-C","view playlist"])
-        call(["cmus-remote","-C","/" + match.data().toString()])
-        result = basename(str(check_output(["cmus-remote","-C","echo {}"]))).rstrip('\\n\'').rstrip()
-        # if the track wasn't found cmus echo's the wrong track, thus simple check the names
-        if result == match.data().toString():
-            call(["cmus-remote","-C","win-activate"])
-        # track not in playlist? add it!
-        else:
-            call(["cmus-remote","-C","view sorted"])
-            call(["cmus-remote","-C","live-filter " + match.data().toString()])
-            call(["cmus-remote","-C","win-add-p"])
-            call(["cmus-remote","-C","live-filter"])
+        if q.startsWith("cmp "):
+            # goto playlist and search for the track
             call(["cmus-remote","-C","view playlist"])
             call(["cmus-remote","-C","/" + match.data().toString()])
+            result = basename(str(check_output(["cmus-remote","-C","echo {}"]))).rstrip('\\n\'').rstrip()
+            # if the track wasn't found cmus echo's the wrong track, thus simple check the names
+            if result == match.data().toString():
+                call(["cmus-remote","-C","win-activate"])
+            # track not in playlist? add it!
+            else:
+                call(["cmus-remote","-C","view sorted"])
+                call(["cmus-remote","-C","live-filter " + match.data().toString()])
+                call(["cmus-remote","-C","win-add-p"])
+                call(["cmus-remote","-C","live-filter"])
+                call(["cmus-remote","-C","view playlist"])
+                call(["cmus-remote","-C","/" + match.data().toString()])
+                call(["cmus-remote","-C","win-activate"])
+
+        elif q.startsWith("cmq "):
+            call(["cmus-remote","-C","view sorted"])
+            call(["cmus-remote","-C","live-filter " + match.data().toString()])
+            call(["cmus-remote","-C","win-add-q"])
+
+        elif q.startsWith("cml "):
+            call(["cmus-remote","-C","view playlist"])
+            call(["cmus-remote","-C","load " + match.data().toString()])
             call(["cmus-remote","-C","win-activate"])
+
+        elif q.startsWith("cmt "):
+            print("ok")
+
 
 
 
