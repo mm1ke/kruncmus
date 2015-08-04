@@ -35,7 +35,9 @@ class kruncmus(plasmascript.Runner):
         # ignore less than 3 characters (in addition to the keyword)
         if q.startsWith("cmc"):
             # get cmus-remote -Q output and split them
-            
+            status=str(check_output(["cmus-remote","-Q"])).rstrip('\\n\'').replace('b\'','').replace('\\n','\n').split('\n')
+            settings={"status":'%s' % status[0][7:], "file":'%s' % basename(status[1][5:]), "continue":'%s' % status[5][13:], "repeat":'%s' % status[11][11:], "repeat_current":'%s' % status[12][19:], "shuffle":'%s' % status[13][12:]}
+
             m.setText("Toggle %s: %s" % (settings['status'],settings['file']))
             m.setData("player-pause")
             context.addMatch(settings['file'], m)
