@@ -3,8 +3,11 @@ from PyKDE4.plasma import Plasma
 from PyKDE4.kdeui import KIcon, KMessageBox
 from subprocess import call
 from subprocess import check_output
+from subprocess import Popen
+from subprocess import PIPE
 from os.path import basename
 import glob
+import re
 
 class kruncmus(plasmascript.Runner):
 
@@ -28,6 +31,16 @@ class kruncmus(plasmascript.Runner):
         if not (q.startsWith("cmp ") or q.startsWith("cml") or q.startsWith("cmq ") or q.startsWith("cmc")):
             return
 
+        # check if cmus is running
+        s = Popen(["ps","axw"],stdout=PIPE)
+        for x in s.stdout:
+            if re.search("cmus",x):
+                cmus_running=True
+
+        if not cmus_running:
+            return
+
+
         m = Plasma.QueryMatch(self.runner)
         m.setIcon(KIcon("media-playback-start"))
         m.setType(Plasma.QueryMatch.ExactMatch)
@@ -36,7 +49,12 @@ class kruncmus(plasmascript.Runner):
         if q.startsWith("cmc"):
             # get cmus-remote -Q output and split them
             status=str(check_output(["cmus-remote","-Q"])).rstrip('\\n\'').replace('b\'','').replace('\\n','\n').split('\n')
-            settings={"status":'%s' % status[0][7:], "file":'%s' % basename(status[1][5:]), "continue":'%s' % status[5][13:], "repeat":'%s' % status[11][11:], "repeat_current":'%s' % status[12][19:], "shuffle":'%s' % status[13][12:]}
+            settings={"status":'%s' % status[0][7:],
+                    "file":'%s' % basename(status[1][5:]),
+                    "continue":'%s' % status[5][13:],
+                    "repeat":'%s' % status[11][11:],
+                    "repeat_current":'%s' % status[12][19:],
+                    "shuffle":'%s' % status[13][12:]}
 
             m.setText("Toggle %s: %s" % (settings['status'],settings['file']))
             m.setData("player-pause")
@@ -59,6 +77,7 @@ class kruncmus(plasmascript.Runner):
 
         else:
             # strip the keyword and leading space
+            # but don't wait until user entered something
             keyword = q[3:]
             keyword = keyword.trimmed()
 
@@ -78,8 +97,10 @@ class kruncmus(plasmascript.Runner):
                 call(["cmus-remote","-C","live-filter " + keyword])
                 
                 output = ""
+                counter = 0
 
                 while True:
+                    counter += 1
 
                     output = basename(str(check_output(["cmus-remote","-C","echo {}"]))).rstrip('\\n\'').rstrip()
                     if output == "":
@@ -88,6 +109,10 @@ class kruncmus(plasmascript.Runner):
                     m.setText("Play: '%s'" % output)
                     m.setData(output)
                     context.addMatch(output, m)
+
+                    # dont show more than 10 results
+                    if counter > 10:
+                        break
 
                     call(["cmus-remote","-C","win-down"])
                     # if we cant move down, names will be the same
@@ -123,7 +148,6 @@ class kruncmus(plasmascript.Runner):
             call(["cmus-remote","-C","win-add-q"])
 
         elif q.startsWith("cml"):
-            #print(match.data().toString())
             call(["cmus-remote","-C","view playlist"])
             call(["cmus-remote","-C","load " + match.data().toString()])
             call(["cmus-remote","-C","win-activate"])
