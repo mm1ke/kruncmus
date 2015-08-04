@@ -24,19 +24,35 @@ class kruncmus(plasmascript.Runner):
         #   cmp     cmus play - play track (also adds to playlist if not there)
         #   cml     cmus playlist - load playlist and play
         #   cmq     cmus queue - add track to queue
-        #   cmt     cmus toggle - toggle settings
-        if not (q.startsWith("cmp ") or q.startsWith("cml") or q.startsWith("cmq ") or q.startsWith("cmt")):
+        #   cmc     cmus control - toggle settings + pause/play/next/previous
+        if not (q.startsWith("cmp ") or q.startsWith("cml") or q.startsWith("cmq ") or q.startsWith("cmc")):
             return
 
         m = Plasma.QueryMatch(self.runner)
-        
+        m.setIcon(KIcon("media-playback-start"))
+        m.setType(Plasma.QueryMatch.ExactMatch)
+
         # ignore less than 3 characters (in addition to the keyword)
-        if q.startsWith("cmt"):
+        if q.startsWith("cmc"):
+            # get cmus-remote -Q output and split them
+            
+            m.setText("Toggle %s: %s" % (settings['status'],settings['file']))
+            m.setData("player-pause")
+            context.addMatch(settings['file'], m)
+
+
+            m.setText("Play next track")
+            m.setData("player-next")
+            context.addMatch("next", m)
+
+            m.setText("Play previous track")
+            m.setData("player-prev")
+            context.addMatch("prev", m)
+
+
             for t in ["continue","repeat","repeat_current","shuffle"]:
-                m.setText("Toggle: '%s'" % t)
-                m.setType(Plasma.QueryMatch.ExactMatch)
-                m.setIcon(KIcon("media-playback-start"))
-                m.setData(t)
+                m.setText("Toggle %s (%s)" % (t.replace('_',' '),settings[t]))
+                m.setData("toggle " + t)
                 context.addMatch(t, m)
 
         else:
@@ -45,13 +61,9 @@ class kruncmus(plasmascript.Runner):
             keyword = keyword.trimmed()
 
             if q.startsWith("cml"):
-                print("asdf")
-
                 PLAYLIST_DIR="/home/michael/Downloads/music/playlists/"
                 for f in glob.glob(PLAYLIST_DIR + str(keyword) + "*"):
                     m.setText("Play: '%s'" % basename(str(f)))
-                    m.setType(Plasma.QueryMatch.ExactMatch)
-                    m.setIcon(KIcon("media-playback-start"))
                     m.setData(f)
                     context.addMatch(f, m)
 
@@ -61,7 +73,6 @@ class kruncmus(plasmascript.Runner):
 
                 # goto libary, clear filter and search
                 call(["cmus-remote","-C","view sorted"])
-                call(["cmus-remote","-C","live-filter"])
                 call(["cmus-remote","-C","live-filter " + keyword])
                 
                 output = ""
@@ -73,8 +84,6 @@ class kruncmus(plasmascript.Runner):
                         break
 
                     m.setText("Play: '%s'" % output)
-                    m.setType(Plasma.QueryMatch.ExactMatch)
-                    m.setIcon(KIcon("media-playback-start"))
                     m.setData(output)
                     context.addMatch(output, m)
 
@@ -112,14 +121,13 @@ class kruncmus(plasmascript.Runner):
             call(["cmus-remote","-C","win-add-q"])
 
         elif q.startsWith("cml"):
+            #print(match.data().toString())
             call(["cmus-remote","-C","view playlist"])
             call(["cmus-remote","-C","load " + match.data().toString()])
             call(["cmus-remote","-C","win-activate"])
 
-        elif q.startsWith("cmt "):
-            print("ok")
-
-
+        elif q.startsWith("cmc"):
+            call(["cmus-remote","-C"," " + match.data().toString()])
 
 
 def CreateRunner(parent):
