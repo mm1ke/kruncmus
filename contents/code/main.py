@@ -95,7 +95,7 @@ class kruncmus(plasmascript.Runner):
                 # goto libary, clear filter and search
                 call(["cmus-remote","-C","view sorted"])
                 call(["cmus-remote","-C","live-filter " + keyword])
-                
+
                 output = ""
                 counter = 0
 
@@ -121,7 +121,7 @@ class kruncmus(plasmascript.Runner):
 
 
     def run(self, context, match):
-        
+
         q = context.query()
 
         if q.startsWith("cmp "):
