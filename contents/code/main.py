@@ -9,6 +9,25 @@ from os.path import basename
 import glob
 import re
 
+# kruncmus
+#
+# this is a plugin to have some basic control over cmus
+# http://cmus.github.io/
+#
+# the plugin provides 4 keywords:
+# cmp   search cmus library and plays them - in order to to that
+#       it usually adds the track (if it's not already there) to the playlist
+#       and starts playing it
+#
+# cml   list's playlist from a default playlist directory. for now it's hardcoded
+#       which is bad but could be easily fixed. After hitting enter that playlist
+#       gets loaded and played
+#
+# cmq   this adds tracks to the play queue. For example if a track should be
+#       played many times it can be added again and again
+#
+# cmc   this adds some cmus options like start/stop, toggle shuffle, next/prev track, etc 
+
 class kruncmus(plasmascript.Runner):
 
     def init(self):
